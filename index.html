@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edusense - Task & Payment Status Sheet</title>
+    <title>Edusense - Task Status Sheet</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,7 +26,7 @@
                 <div class="brand-icon">E</div>
                 <div class="brand-info">
                     <h1>Edusense</h1>
-                    <p>Interactive Task & Payment Tracker Sheet</p>
+                    <p>Interactive Task Tracker Sheet</p>
                 </div>
             </div>
             
@@ -56,6 +56,10 @@
                     <i class="fa-solid fa-upload"></i> Restore Data
                 </label>
                 <input type="file" id="importInput" accept=".json" style="display: none;">
+
+                <button id="clearAllBtn" class="btn btn-secondary" style="color: #dc2626;" title="Clear All Sheet Tasks">
+                    <i class="fa-solid fa-trash-can"></i> Clear Sheet
+                </button>
             </div>
         </header>
 
@@ -103,21 +107,11 @@
 
             <div class="stat-card">
                 <div class="stat-info">
-                    <h3>Paid</h3>
-                    <div id="statPaid" class="value" style="color: #059669;">0</div>
+                    <h3>Documents</h3>
+                    <div id="statDocs" class="value" style="color: #0284c7;">0</div>
                 </div>
-                <div class="stat-indicator paid">
-                    <i class="fa-solid fa-money-bill-wave"></i>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Unpaid</h3>
-                    <div id="statUnpaid" class="value" style="color: #e11d48;">0</div>
-                </div>
-                <div class="stat-indicator unpaid">
-                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                <div class="stat-indicator docs">
+                    <i class="fa-solid fa-paperclip"></i>
                 </div>
             </div>
         </div>
@@ -128,7 +122,7 @@
             <div class="search-filter-bar">
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInput" placeholder="Search tasks, descriptions, duration, or remarks...">
+                    <input type="text" id="searchInput" placeholder="Search tasks, descriptions, duration, documents, or remarks...">
                 </div>
 
                 <div class="filter-group">
@@ -136,8 +130,7 @@
                     <button class="filter-chip" data-filter="complete">✓ Complete</button>
                     <button class="filter-chip" data-filter="progress">⏳ Working</button>
                     <button class="filter-chip" data-filter="pending">✗ Pending</button>
-                    <button class="filter-chip" data-filter="paid">✓ Paid</button>
-                    <button class="filter-chip" data-filter="unpaid">✗ Unpaid</button>
+                    <button class="filter-chip" data-filter="docs">📄 Documents</button>
                 </div>
             </div>
 
@@ -155,14 +148,10 @@
                     <input type="hidden" id="newTaskStatus" value="complete">
                 </div>
 
-                <input type="text" id="newTaskRemarks" class="form-control" placeholder="Remarks">
+                <!-- 📌 Document File Attachment Input -->
+                <input type="file" id="newTaskFile" class="file-upload-input" title="Attach Document (PDF, Image, Doc)">
 
-                <!-- 📌 Clean Tick Payment Selector -->
-                <div class="tick-selector-wrapper" id="paymentTickSelector" title="Select Payment Status">
-                    <div class="tick-option paid selected" data-val="paid" title="Paid"><i class="fa-solid fa-check"></i> Paid</div>
-                    <div class="tick-option unpaid" data-val="unpaid" title="Unpaid"><i class="fa-solid fa-xmark"></i> Unpaid</div>
-                    <input type="hidden" id="newTaskPayment" value="paid">
-                </div>
+                <input type="text" id="newTaskRemarks" class="form-control" placeholder="Remarks">
 
                 <button type="submit" class="btn btn-primary">
                     <i class="fa-solid fa-plus"></i> Add Row
@@ -180,8 +169,8 @@
                             <th>Description</th>
                             <th>Duration (Hours/Days)</th>
                             <th>Status (Select Tick)</th>
+                            <th>Document / Attachment</th>
                             <th>Remarks</th>
-                            <th>Payment (Select Tick)</th>
                             <th style="text-align: right;">Action</th>
                         </tr>
                     </thead>
