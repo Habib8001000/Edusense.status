@@ -1,7 +1,7 @@
 /**
- * Edusense Task & Payment Status Sheet Manager
+ * Edusense Task Sheet Manager
  * Author: Antigravity AI
- * Features: Clean Checkmark Ticks (✓), GitHub Cloud Sync, LocalStorage Backup, Duration/Hours Column, Real-time Filters, Excel/CSV Export
+ * Features: Document/File Upload, Download & Delete, Clean Checkmark Ticks (✓), GitHub Gist Sync, LocalStorage Backup, Duration Column, Real-time Filters, Excel/CSV Export
  */
 
 const STORAGE_KEY = 'EDUSENSE_SHEET_DATA_V1';
@@ -17,8 +17,9 @@ const defaultTasks = [
         description: 'Complete front-end mockups for Edusense portal',
         duration: '6 hrs',
         status: 'complete',
+        fileName: '',
+        fileData: '',
         remarks: 'Delivered ahead of schedule',
-        payment: 'paid',
         updatedAt: new Date().toISOString()
     },
     {
@@ -27,8 +28,9 @@ const defaultTasks = [
         description: 'Migrate student records to AWS DynamoDB cluster',
         duration: '2 days',
         status: 'progress',
+        fileName: '',
+        fileData: '',
         remarks: '50% records transferred',
-        payment: 'unpaid',
         updatedAt: new Date().toISOString()
     },
     {
@@ -37,8 +39,9 @@ const defaultTasks = [
         description: 'Configure IIS web server and SSL certificate',
         duration: '4 hrs',
         status: 'pending',
+        fileName: '',
+        fileData: '',
         remarks: 'Waiting for DNS propagation',
-        payment: 'unpaid',
         updatedAt: new Date().toISOString()
     }
 ];
@@ -59,6 +62,7 @@ const addTaskForm = document.getElementById('addTaskForm');
 const exportBtn = document.getElementById('exportBtn');
 const exportCsvBtn = document.getElementById('exportCsvBtn');
 const importInput = document.getElementById('importInput');
+const clearAllBtn = document.getElementById('clearAllBtn');
 
 // GitHub Elements
 const storageBadge = document.getElementById('storageBadge');
@@ -77,8 +81,7 @@ const statTotal = document.getElementById('statTotal');
 const statComplete = document.getElementById('statComplete');
 const statProgress = document.getElementById('statProgress');
 const statPending = document.getElementById('statPending');
-const statPaid = document.getElementById('statPaid');
-const statUnpaid = document.getElementById('statUnpaid');
+const statDocs = document.getElementById('statDocs');
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', async () => {
@@ -101,11 +104,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderSheet();
 });
 
-// Load tasks from LocalStorage
+// Load tasks from LocalStorage safely
 function loadTasksFromLocalStorage() {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
+        if (saved !== null) {
             tasks = JSON.parse(saved);
         } else {
             tasks = [...defaultTasks];
@@ -149,7 +152,7 @@ async function fetchTasksFromGitHub() {
         const gistData = await res.json();
         const fileContent = gistData.files?.[GIST_FILENAME]?.content;
 
-        if (fileContent) {
+        if (fileContent !== undefined) {
             tasks = JSON.parse(fileContent);
             saveTasksToLocalStorage();
             updateSyncBadgeStatus('github', 'Live GitHub Sync Active');
@@ -175,7 +178,7 @@ async function pushTasksToGitHub() {
 
     try {
         const payload = {
-            description: 'Edusense Task & Payment Status Sheet',
+            description: 'Edusense Task Sheet Database',
             files: {
                 [GIST_FILENAME]: {
                     content: JSON.stringify(tasks, null, 2)
@@ -196,11 +199,11 @@ async function pushTasksToGitHub() {
         if (!res.ok) throw new Error(`GitHub Patch Error (${res.status})`);
 
         updateSyncBadgeStatus('github', 'Live GitHub Sync Active');
-        showToast('Saved & Synced to GitHub Gist Cloud!', 'success');
+        showToast('Saved & Synced to GitHub Cloud!', 'success');
     } catch (err) {
         console.error('GitHub Push Error:', err);
         updateSyncBadgeStatus('local', 'Save Error (Local Backup Saved)');
-        showToast('Failed to push to GitHub Gist. Check your token.', 'error');
+        showToast('Local change saved, but GitHub sync failed. Check Token permission.', 'error');
     } finally {
         isSyncing = false;
     }
@@ -219,7 +222,7 @@ async function createGistAutomatically() {
         autoCreateGistBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating Gist...';
 
         const payload = {
-            description: 'Edusense Task & Payment Sheet Database',
+            description: 'Edusense Task Sheet Database',
             public: false,
             files: {
                 [GIST_FILENAME]: {
@@ -319,27 +322,17 @@ function setupGitHubSyncModal() {
     });
 }
 
-// Setup Form Submission & Tick Selectors
+// Setup Form Submission & File Upload Reader
 function setupFormListeners() {
     const statusTicks = document.querySelectorAll('#statusTickSelector .tick-option');
-    const paymentTicks = document.querySelectorAll('#paymentTickSelector .tick-option');
-    
     const newTaskStatus = document.getElementById('newTaskStatus');
-    const newTaskPayment = document.getElementById('newTaskPayment');
+    const newTaskFile = document.getElementById('newTaskFile');
 
     statusTicks.forEach(tick => {
         tick.addEventListener('click', () => {
             statusTicks.forEach(t => t.classList.remove('selected'));
             tick.classList.add('selected');
             newTaskStatus.value = tick.dataset.val;
-        });
-    });
-
-    paymentTicks.forEach(tick => {
-        tick.addEventListener('click', () => {
-            paymentTicks.forEach(t => t.classList.remove('selected'));
-            tick.classList.add('selected');
-            newTaskPayment.value = tick.dataset.val;
         });
     });
 
@@ -350,11 +343,19 @@ function setupFormListeners() {
         const durationVal = document.getElementById('newTaskDuration').value.trim();
         const remarksVal = document.getElementById('newTaskRemarks').value.trim();
         const statusVal = newTaskStatus.value;
-        const paymentVal = newTaskPayment.value;
 
         if (!taskVal) {
             showToast('Please enter a task title!', 'error');
             return;
+        }
+
+        let fileName = '';
+        let fileData = '';
+
+        if (newTaskFile && newTaskFile.files[0]) {
+            const file = newTaskFile.files[0];
+            fileName = file.name;
+            fileData = await readFileAsBase64(file);
         }
 
         const newTask = {
@@ -363,8 +364,9 @@ function setupFormListeners() {
             description: descVal || '-',
             duration: durationVal || '-',
             status: statusVal,
+            fileName: fileName,
+            fileData: fileData,
             remarks: remarksVal || '-',
-            payment: paymentVal,
             updatedAt: new Date().toISOString()
         };
 
@@ -377,13 +379,51 @@ function setupFormListeners() {
         statusTicks[0].classList.add('selected');
         newTaskStatus.value = 'complete';
 
-        paymentTicks.forEach(t => t.classList.remove('selected'));
-        paymentTicks[0].classList.add('selected');
-        newTaskPayment.value = 'paid';
-
         showToast('New Task Added & Synced!', 'success');
     });
 }
+
+// Read file as Base64 Data URL
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
+}
+
+// Attach Document to existing task
+window.attachFileToTask = async function(id, inputElement) {
+    if (!inputElement.files || !inputElement.files[0]) return;
+    const file = inputElement.files[0];
+
+    const task = tasks.find(t => String(t.id) === String(id));
+    if (task) {
+        showToast('Uploading document...', 'info');
+        task.fileName = file.name;
+        task.fileData = await readFileAsBase64(file);
+        task.updatedAt = new Date().toISOString();
+        await saveAllData();
+        renderSheet();
+        showToast('Document attached successfully!', 'success');
+    }
+};
+
+// 📌 REMOVE/DELETE DOCUMENT FROM TASK
+window.removeDocumentFromTask = async function(id) {
+    if (confirm('Are you sure you want to delete this attached document?')) {
+        const task = tasks.find(t => String(t.id) === String(id));
+        if (task) {
+            task.fileName = '';
+            task.fileData = '';
+            task.updatedAt = new Date().toISOString();
+            await saveAllData();
+            renderSheet();
+            showToast('Document deleted from task.', 'warn');
+        }
+    }
+};
 
 // Setup Search & Filter Event Listeners
 function setupSearchAndFilters() {
@@ -410,15 +450,13 @@ function updateStats() {
     const complete = tasks.filter(t => t.status === 'complete').length;
     const progress = tasks.filter(t => t.status === 'progress').length;
     const pending = tasks.filter(t => t.status === 'pending').length;
-    const paid = tasks.filter(t => t.payment === 'paid').length;
-    const unpaid = tasks.filter(t => t.payment === 'unpaid').length;
+    const docsCount = tasks.filter(t => t.fileName).length;
 
     statTotal.textContent = total;
     statComplete.textContent = complete;
     statProgress.textContent = progress;
     statPending.textContent = pending;
-    statPaid.textContent = paid;
-    statUnpaid.textContent = unpaid;
+    if (statDocs) statDocs.textContent = docsCount;
 }
 
 // Render Sheet Table
@@ -428,13 +466,14 @@ function renderSheet() {
     const filteredTasks = tasks.filter(task => {
         const matchesFilter = 
             currentFilter === 'all' || 
-            task.status === currentFilter || 
-            task.payment === currentFilter;
+            task.status === currentFilter ||
+            (currentFilter === 'docs' && task.fileName);
 
         const matchesSearch = 
             task.task.toLowerCase().includes(searchQuery) ||
             task.description.toLowerCase().includes(searchQuery) ||
             (task.duration && task.duration.toLowerCase().includes(searchQuery)) ||
+            (task.fileName && task.fileName.toLowerCase().includes(searchQuery)) ||
             task.remarks.toLowerCase().includes(searchQuery);
 
         return matchesFilter && matchesSearch;
@@ -483,21 +522,25 @@ function renderSheet() {
                     </button>
                 </div>
             </td>
+            <td class="task-doc-cell">
+                ${task.fileData ? `
+                    <div class="doc-badge-wrapper">
+                        <a href="${task.fileData}" download="${escapeHtml(task.fileName)}" class="doc-badge" title="Click to download ${escapeHtml(task.fileName)}">
+                            <i class="fa-solid fa-paperclip"></i> ${escapeHtml(task.fileName)}
+                        </a>
+                        <button class="btn-delete-doc" onclick="removeDocumentFromTask('${task.id}')" title="Delete Document Only">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                ` : `
+                    <label class="attach-file-btn" title="Attach Document (PDF, Image, Doc)">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Attach
+                        <input type="file" onchange="attachFileToTask('${task.id}', this)" style="display:none;">
+                    </label>
+                `}
+            </td>
             <td class="task-remarks-cell">
                 <span class="editable-cell" contenteditable="true" data-field="remarks">${escapeHtml(task.remarks)}</span>
-            </td>
-            <td>
-                <!-- 📌 Clean Checkmark Tick Group for Payment -->
-                <div class="table-tick-group">
-                    <button class="payment-tick-btn paid ${task.payment === 'paid' ? 'active' : ''}" 
-                            onclick="updateTaskPayment('${task.id}', 'paid')" title="Paid">
-                        <i class="fa-solid fa-check"></i> Paid
-                    </button>
-                    <button class="payment-tick-btn unpaid ${task.payment === 'unpaid' ? 'active' : ''}" 
-                            onclick="updateTaskPayment('${task.id}', 'unpaid')" title="Unpaid">
-                        <i class="fa-solid fa-xmark"></i> Unpaid
-                    </button>
-                </div>
             </td>
             <td style="text-align: right;">
                 <button class="btn-icon btn-danger" onclick="deleteTask('${task.id}')" title="Delete Task">
@@ -527,7 +570,7 @@ function renderSheet() {
 
 // Update Status Via Tick Click
 window.updateTaskStatus = async function(id, newStatus) {
-    const task = tasks.find(t => t.id === id);
+    const task = tasks.find(t => String(t.id) === String(id));
     if (task) {
         task.status = newStatus;
         task.updatedAt = new Date().toISOString();
@@ -537,21 +580,9 @@ window.updateTaskStatus = async function(id, newStatus) {
     }
 };
 
-// Update Payment Status Via Tick Click
-window.updateTaskPayment = async function(id, newPayment) {
-    const task = tasks.find(t => t.id === id);
-    if (task) {
-        task.payment = newPayment;
-        task.updatedAt = new Date().toISOString();
-        await saveAllData();
-        renderSheet();
-        showToast(`Payment updated to ${newPayment.toUpperCase()}`, 'info');
-    }
-};
-
 // Editable Cell Update
 async function updateTaskField(id, field, value) {
-    const task = tasks.find(t => t.id === id);
+    const task = tasks.find(t => String(t.id) === String(id));
     if (task && task[field] !== value) {
         task[field] = value || '-';
         task.updatedAt = new Date().toISOString();
@@ -560,13 +591,18 @@ async function updateTaskField(id, field, value) {
     }
 }
 
-// Delete Task
+// GUARANTEED INSTANT TASK DELETION
 window.deleteTask = async function(id) {
     if (confirm('Are you sure you want to delete this task?')) {
-        tasks = tasks.filter(t => t.id !== id);
-        await saveAllData();
+        tasks = tasks.filter(t => String(t.id) !== String(id));
+        
+        saveTasksToLocalStorage();
         renderSheet();
-        showToast('Task removed from sheet.', 'warn');
+        showToast('Task deleted successfully!', 'warn');
+
+        if (ghGistId && ghToken) {
+            await pushTasksToGitHub();
+        }
     }
 };
 
@@ -632,15 +668,15 @@ function setupBackupHandlers() {
     });
 
     exportCsvBtn.addEventListener('click', () => {
-        let csvContent = "data:text/csv;charset=utf-8,Task,Description,Duration/Hours,Status,Remarks,Payment Status,Last Updated\n";
+        let csvContent = "data:text/csv;charset=utf-8,Task,Description,Duration/Hours,Status,Document Name,Remarks,Last Updated\n";
         tasks.forEach(t => {
             const row = [
                 `"${t.task.replace(/"/g, '""')}"`,
                 `"${t.description.replace(/"/g, '""')}"`,
                 `"${(t.duration || '').replace(/"/g, '""')}"`,
                 `"${t.status}"`,
+                `"${(t.fileName || '').replace(/"/g, '""')}"`,
                 `"${t.remarks.replace(/"/g, '""')}"`,
-                `"${t.payment}"`,
                 `"${t.updatedAt}"`
             ].join(",");
             csvContent += row + "\n";
@@ -678,4 +714,15 @@ function setupBackupHandlers() {
         };
         reader.readAsText(file);
     });
+
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to delete ALL tasks from the sheet?')) {
+                tasks = [];
+                await saveAllData();
+                renderSheet();
+                showToast('All sheet data cleared.', 'warn');
+            }
+        });
+    }
 }
