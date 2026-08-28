@@ -128,16 +128,16 @@
             <div class="search-filter-bar">
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInput" placeholder="Search tasks, descriptions, or remarks...">
+                    <input type="text" id="searchInput" placeholder="Search tasks, descriptions, duration, or remarks...">
                 </div>
 
                 <div class="filter-group">
                     <button class="filter-chip active" data-filter="all">All</button>
-                    <button class="filter-chip" data-filter="complete">🟢 Complete</button>
-                    <button class="filter-chip" data-filter="progress">🟡 Working</button>
-                    <button class="filter-chip" data-filter="pending">🔴 Pending</button>
-                    <button class="filter-chip" data-filter="paid">🟢 Paid</button>
-                    <button class="filter-chip" data-filter="unpaid">🔴 Unpaid</button>
+                    <button class="filter-chip" data-filter="complete">✓ Complete</button>
+                    <button class="filter-chip" data-filter="progress">⏳ Working</button>
+                    <button class="filter-chip" data-filter="pending">✗ Pending</button>
+                    <button class="filter-chip" data-filter="paid">✓ Paid</button>
+                    <button class="filter-chip" data-filter="unpaid">✗ Unpaid</button>
                 </div>
             </div>
 
@@ -145,23 +145,22 @@
             <form id="addTaskForm" class="add-task-form">
                 <input type="text" id="newTaskTitle" class="form-control" placeholder="Task Title *" required>
                 <input type="text" id="newTaskDesc" class="form-control" placeholder="Description">
+                <input type="text" id="newTaskDuration" class="form-control" placeholder="Duration (e.g. 5 hrs / 2 days)">
                 
-                <!-- 3 Dot Status Selector -->
-                <div class="dot-selector-wrapper" id="statusDotSelector" title="Select Task Status: Green (Complete), Yellow (Working), Red (Pending)">
-                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-right: 0.2rem;">Status:</span>
-                    <div class="dot-option green selected" data-val="complete" title="Green: Complete"></div>
-                    <div class="dot-option yellow" data-val="progress" title="Yellow: Working on it"></div>
-                    <div class="dot-option red" data-val="pending" title="Red: Not Complete"></div>
+                <!-- 📌 Clean Tick Status Selector -->
+                <div class="tick-selector-wrapper" id="statusTickSelector" title="Select Status">
+                    <div class="tick-option complete selected" data-val="complete" title="Complete"><i class="fa-solid fa-check"></i></div>
+                    <div class="tick-option progress" data-val="progress" title="Working on it"><i class="fa-solid fa-clock"></i></div>
+                    <div class="tick-option pending" data-val="pending" title="Not Complete"><i class="fa-solid fa-xmark"></i></div>
                     <input type="hidden" id="newTaskStatus" value="complete">
                 </div>
 
                 <input type="text" id="newTaskRemarks" class="form-control" placeholder="Remarks">
 
-                <!-- 2 Dot Payment Selector -->
-                <div class="dot-selector-wrapper" id="paymentDotSelector" title="Select Payment Status: Green (Paid), Red (Unpaid)">
-                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-right: 0.2rem;">Payment:</span>
-                    <div class="dot-option green selected" data-val="paid" title="Green: Paid"></div>
-                    <div class="dot-option red" data-val="unpaid" title="Red: Unpaid"></div>
+                <!-- 📌 Clean Tick Payment Selector -->
+                <div class="tick-selector-wrapper" id="paymentTickSelector" title="Select Payment Status">
+                    <div class="tick-option paid selected" data-val="paid" title="Paid"><i class="fa-solid fa-check"></i> Paid</div>
+                    <div class="tick-option unpaid" data-val="unpaid" title="Unpaid"><i class="fa-solid fa-xmark"></i> Unpaid</div>
                     <input type="hidden" id="newTaskPayment" value="paid">
                 </div>
 
@@ -179,9 +178,10 @@
                         <tr>
                             <th>Task</th>
                             <th>Description</th>
-                            <th>Status (Select Dot)</th>
+                            <th>Duration (Hours/Days)</th>
+                            <th>Status (Select Tick)</th>
                             <th>Remarks</th>
-                            <th>Payment (Select Dot)</th>
+                            <th>Payment (Select Tick)</th>
                             <th style="text-align: right;">Action</th>
                         </tr>
                     </thead>
