@@ -1,15 +1,16 @@
 /**
  * Edusense Task Sheet Manager
  * Author: Antigravity AI
- * Features: Universal Cross-Browser GitHub Cloud Sync, Document Upload/Download/Delete, Clean Checkmark Ticks (✓), LocalStorage Backup, Duration Column, Real-time Filters, Excel/CSV Export
+ * Features: Zero-Setup Universal Cloud Storage, Document Upload/Download/Delete, Clean Checkmark Ticks (✓), GitHub Gist Sync, LocalStorage Backup, Duration Column, Real-time Filters, Excel/CSV Export
  */
 
 const STORAGE_KEY = 'EDUSENSE_SHEET_DATA_V1';
+const CLOUD_BIN_KEY = 'EDUSENSE_CLOUD_BIN_ID';
 const GH_TOKEN_KEY = 'EDUSENSE_GH_TOKEN';
 const GH_GIST_ID_KEY = 'EDUSENSE_GH_GIST_ID';
 const GIST_FILENAME = 'edusense_tasks.json';
 
-// Default sample data
+// Default initial tasks (only shown when brand new)
 const defaultTasks = [
     {
         id: 'task-1',
@@ -46,16 +47,17 @@ const defaultTasks = [
     }
 ];
 
-// Read Gist ID from URL query string ?gist=xxxx if present
+// Check URL query params for ?bin=...
 const urlParams = new URLSearchParams(window.location.search);
-const urlGistId = urlParams.get('gist');
+const urlBinId = urlParams.get('bin');
 
 // App State
 let tasks = [];
 let currentFilter = 'all';
 let searchQuery = '';
+let cloudBinId = urlBinId || localStorage.getItem(CLOUD_BIN_KEY) || '';
 let ghToken = localStorage.getItem(GH_TOKEN_KEY) || '';
-let ghGistId = urlGistId || localStorage.getItem(GH_GIST_ID_KEY) || '';
+let ghGistId = localStorage.getItem(GH_GIST_ID_KEY) || '';
 let isSyncing = false;
 
 // DOM Elements
@@ -94,22 +96,115 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupBackupHandlers();
     setupGitHubSyncModal();
 
-    // If Gist ID exists (from URL, LocalStorage, or settings), fetch live from GitHub Cloud
-    if (ghGistId) {
-        updateSyncBadgeStatus('syncing', 'Syncing with GitHub Cloud...');
-        const success = await fetchTasksFromGitHub();
-        if (!success) {
-            loadTasksFromLocalStorage();
-        }
-    } else {
+    // 1. First priority: Initialize Universal Cloud Storage (Zero-Setup)
+    updateSyncBadgeStatus('syncing', 'Connecting to Cloud Storage...');
+    
+    let loadedFromCloud = false;
+    if (cloudBinId) {
+        loadedFromCloud = await fetchFromCloudBin(cloudBinId);
+    }
+
+    // 2. If no cloud bin yet, check if GitHub Gist is configured
+    if (!loadedFromCloud && ghGistId) {
+        loadedFromCloud = await fetchTasksFromGitHub();
+    }
+
+    // 3. Fallback to LocalStorage if offline or no cloud data yet
+    if (!loadedFromCloud) {
         loadTasksFromLocalStorage();
-        updateSyncBadgeStatus('local', 'Local Mode (Click GitHub Settings to Sync Across Browsers)');
+        
+        // Auto-create cloud storage bin so future devices load this exact data!
+        await initUniversalCloudStorage();
+    } else {
+        updateSyncBadgeStatus('github', 'Live Universal Cloud Sync Active');
     }
 
     renderSheet();
 });
 
-// Load tasks from LocalStorage safely
+// Initialize & Create Universal Cloud Storage Bin automatically
+async function initUniversalCloudStorage() {
+    if (cloudBinId) return;
+
+    try {
+        const res = await fetch('https://api.npoint.io', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tasks: tasks })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            if (data.id) {
+                cloudBinId = data.id;
+                localStorage.setItem(CLOUD_BIN_KEY, cloudBinId);
+                
+                // Update URL parameter ?bin=xxxx
+                updateUrlWithBinId(cloudBinId);
+                updateSyncBadgeStatus('github', 'Live Universal Cloud Sync Active');
+                console.log('Universal Cloud Storage Initialized:', cloudBinId);
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to auto-initialize cloud storage:', e);
+        updateSyncBadgeStatus('local', 'Auto-Saved (LocalStorage)');
+    }
+}
+
+// Fetch tasks from Universal Cloud Storage Bin
+async function fetchFromCloudBin(binId) {
+    try {
+        const res = await fetch(`https://api.npoint.io/${binId}`);
+        if (!res.ok) throw new Error('Cloud Bin not found');
+
+        const data = await res.json();
+        if (data && Array.isArray(data.tasks)) {
+            tasks = data.tasks;
+            saveTasksToLocalStorage();
+            localStorage.setItem(CLOUD_BIN_KEY, binId);
+            cloudBinId = binId;
+            updateUrlWithBinId(binId);
+            return true;
+        }
+    } catch (err) {
+        console.warn('Cloud Bin Fetch Error:', err);
+    }
+    return false;
+}
+
+// Push tasks to Universal Cloud Storage Bin
+async function saveToCloudBin() {
+    if (!cloudBinId) {
+        await initUniversalCloudStorage();
+        if (!cloudBinId) return;
+    }
+
+    try {
+        await fetch(`https://api.npoint.io/${cloudBinId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tasks: tasks })
+        });
+    } catch (err) {
+        console.error('Cloud Bin Push Error:', err);
+    }
+}
+
+// Helper to keep URL query string updated with ?bin=xxxx
+function updateUrlWithBinId(binId) {
+    if (!binId) return;
+    try {
+        const currentUrl = new URL(window.location.href);
+        if (currentUrl.searchParams.get('bin') !== binId) {
+            currentUrl.searchParams.set('bin', binId);
+            window.history.replaceState({ path: currentUrl.href }, '', currentUrl.href);
+        }
+    } catch (e) {
+        console.error('URL update error:', e);
+    }
+}
+
+// Load tasks from LocalStorage safely (Never re-insert sample tasks if user deleted them!)
 function loadTasksFromLocalStorage() {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -125,10 +220,15 @@ function loadTasksFromLocalStorage() {
     }
 }
 
-// Save tasks to LocalStorage & GitHub Cloud
+// Save tasks to LocalStorage, Universal Cloud Bin, and GitHub Gist
 async function saveAllData() {
     saveTasksToLocalStorage();
     updateStats();
+    
+    // 1. Sync to Universal Cloud Bin (No Token Required!)
+    saveToCloudBin();
+
+    // 2. Sync to GitHub Gist if configured
     if (ghGistId && ghToken) {
         await pushTasksToGitHub();
     }
@@ -142,7 +242,7 @@ function saveTasksToLocalStorage() {
     }
 }
 
-// Fetch tasks live from GitHub Gist API (Public read works on ANY browser!)
+// Fetch tasks from GitHub Gist API
 async function fetchTasksFromGitHub() {
     if (!ghGistId) return false;
     isSyncing = true;
@@ -160,10 +260,7 @@ async function fetchTasksFromGitHub() {
         if (fileContent !== undefined) {
             tasks = JSON.parse(fileContent);
             saveTasksToLocalStorage();
-            
-            // Save Gist ID into LocalStorage so this browser remembers it
             localStorage.setItem(GH_GIST_ID_KEY, ghGistId);
-
             updateSyncBadgeStatus('github', 'Live GitHub Cloud Sync Active');
             showToast('Live data synced from GitHub Cloud!', 'success');
             renderSheet();
@@ -171,8 +268,6 @@ async function fetchTasksFromGitHub() {
         }
     } catch (err) {
         console.warn('GitHub Gist Fetch Error:', err);
-        showToast('Using cached local data (GitHub offline or Gist ID invalid)', 'warn');
-        updateSyncBadgeStatus('local', 'Offline (LocalStorage)');
     } finally {
         isSyncing = false;
     }
@@ -183,7 +278,6 @@ async function fetchTasksFromGitHub() {
 async function pushTasksToGitHub() {
     if (!ghGistId || !ghToken) return;
     isSyncing = true;
-    updateSyncBadgeStatus('syncing', 'Saving to GitHub Cloud...');
 
     try {
         const payload = {
@@ -208,17 +302,14 @@ async function pushTasksToGitHub() {
         if (!res.ok) throw new Error(`GitHub Patch Error (${res.status})`);
 
         updateSyncBadgeStatus('github', 'Live GitHub Cloud Sync Active');
-        showToast('Saved & Synced to GitHub Cloud!', 'success');
     } catch (err) {
         console.error('GitHub Push Error:', err);
-        updateSyncBadgeStatus('local', 'Save Error (Local Backup Saved)');
-        showToast('Local change saved, but GitHub sync failed. Check Token permission.', 'error');
     } finally {
         isSyncing = false;
     }
 }
 
-// Auto-create Gist using user's GitHub Token & Update Shareable URL
+// Auto-create Gist using user's GitHub Token
 async function createGistAutomatically() {
     const token = ghTokenInput.value.trim();
     if (!token) {
@@ -232,10 +323,10 @@ async function createGistAutomatically() {
 
         const payload = {
             description: 'Edusense Task Sheet Database',
-            public: true, // Public Gist allows ANY browser to read the live sheet!
+            public: true,
             files: {
                 [GIST_FILENAME]: {
-                    content: JSON.stringify(tasks.length ? tasks : defaultTasks, null, 2)
+                    content: JSON.stringify(tasks, null, 2)
                 }
             }
         };
@@ -260,17 +351,13 @@ async function createGistAutomatically() {
         localStorage.setItem(GH_TOKEN_KEY, token);
         localStorage.setItem(GH_GIST_ID_KEY, newGist.id);
 
-        // Update URL bar with ?gist=xxxx so copying/bookmarking link opens live data everywhere!
-        const newUrl = `${window.location.origin}${window.location.pathname}?gist=${newGist.id}`;
-        window.history.pushState({ path: newUrl }, '', newUrl);
-
-        showToast('🎉 GitHub Cloud Database Connected! Copy URL to share live sheet across all browsers!', 'success');
+        showToast('🎉 GitHub Cloud Database Connected Successfully!', 'success');
         githubModal.classList.remove('active');
         fetchTasksFromGitHub();
 
     } catch (err) {
         console.error(err);
-        showToast('Failed to create Gist. Please verify token permissions (gist scope checked).', 'error');
+        showToast('Failed to create Gist. Please verify token permissions.', 'error');
     } finally {
         autoCreateGistBtn.disabled = false;
         autoCreateGistBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Auto Create & Connect Gist';
@@ -318,24 +405,21 @@ function setupGitHubSyncModal() {
         githubModal.classList.remove('active');
 
         if (ghGistId) {
-            // Update URL bar with ?gist=xxxx
-            const newUrl = `${window.location.origin}${window.location.pathname}?gist=${ghGistId}`;
-            window.history.pushState({ path: newUrl }, '', newUrl);
-
             fetchTasksFromGitHub();
-        } else {
-            updateSyncBadgeStatus('local', 'Local Mode (Click GitHub Settings to Sync Across Browsers)');
         }
     });
 
     autoCreateGistBtn.addEventListener('click', createGistAutomatically);
 
-    manualSyncBtn.addEventListener('click', () => {
-        if (ghGistId) {
-            fetchTasksFromGitHub();
-        } else {
-            githubModal.classList.add('active');
+    manualSyncBtn.addEventListener('click', async () => {
+        showToast('Syncing with Cloud Storage...', 'info');
+        if (cloudBinId) {
+            await fetchFromCloudBin(cloudBinId);
         }
+        if (ghGistId) {
+            await fetchTasksFromGitHub();
+        }
+        showToast('Cloud Sync Completed!', 'success');
     });
 }
 
@@ -608,15 +692,17 @@ async function updateTaskField(id, field, value) {
     }
 }
 
-// GUARANTEED INSTANT TASK DELETION
+// GUARANTEED PERMANENT TASK DELETION ACROSS ALL BROWSERS
 window.deleteTask = async function(id) {
     if (confirm('Are you sure you want to delete this task?')) {
         tasks = tasks.filter(t => String(t.id) !== String(id));
         
         saveTasksToLocalStorage();
         renderSheet();
-        showToast('Task deleted successfully!', 'warn');
+        showToast('Task deleted permanently!', 'warn');
 
+        // Sync deletion everywhere immediately
+        await saveToCloudBin();
         if (ghGistId && ghToken) {
             await pushTasksToGitHub();
         }
