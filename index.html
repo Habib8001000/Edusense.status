@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edusense - Task & Payment Status Sheet</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- Header & Branding -->
+        <header>
+            <div class="brand">
+                <div class="brand-icon">E</div>
+                <div class="brand-info">
+                    <h1>Edusense</h1>
+                    <p>Interactive Task & Payment Tracker Sheet</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="storage-badge" id="storageBadge" title="Click to configure GitHub Cloud Sync Settings">
+                    <span class="pulse-dot"></span>
+                    <span id="syncStatusText">Auto-Saved (LocalStorage)</span>
+                </div>
+
+                <button id="manualSyncBtn" class="btn btn-github" title="Sync Live Data with GitHub">
+                    <i class="fa-solid fa-rotate"></i> Sync GitHub
+                </button>
+
+                <button id="openGithubModalBtn" class="btn btn-secondary" title="GitHub Cloud Sync Settings">
+                    <i class="fa-brands fa-github"></i> GitHub Settings
+                </button>
+
+                <button id="exportBtn" class="btn btn-secondary" title="Download JSON Backup">
+                    <i class="fa-solid fa-download"></i> Backup JSON
+                </button>
+
+                <button id="exportCsvBtn" class="btn btn-secondary" title="Export to Excel / CSV">
+                    <i class="fa-solid fa-file-excel"></i> Export CSV
+                </button>
+
+                <label for="importInput" class="btn btn-secondary" title="Restore Data from JSON File">
+                    <i class="fa-solid fa-upload"></i> Restore Data
+                </label>
+                <input type="file" id="importInput" accept=".json" style="display: none;">
+            </div>
+        </header>
+
+        <!-- Dashboard Quick Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Total Tasks</h3>
+                    <div id="statTotal" class="value">0</div>
+                </div>
+                <div class="stat-indicator all">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Complete</h3>
+                    <div id="statComplete" class="value" style="color: #16a34a;">0</div>
+                </div>
+                <div class="stat-indicator complete">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Working On It</h3>
+                    <div id="statProgress" class="value" style="color: #ca8a04;">0</div>
+                </div>
+                <div class="stat-indicator progress">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Not Complete</h3>
+                    <div id="statPending" class="value" style="color: #dc2626;">0</div>
+                </div>
+                <div class="stat-indicator pending">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Paid</h3>
+                    <div id="statPaid" class="value" style="color: #059669;">0</div>
+                </div>
+                <div class="stat-indicator paid">
+                    <i class="fa-solid fa-money-bill-wave"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Unpaid</h3>
+                    <div id="statUnpaid" class="value" style="color: #e11d48;">0</div>
+                </div>
+                <div class="stat-indicator unpaid">
+                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Panel: Add Form & Filters -->
+        <div class="controls-panel">
+            
+            <div class="search-filter-bar">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" placeholder="Search tasks, descriptions, or remarks...">
+                </div>
+
+                <div class="filter-group">
+                    <button class="filter-chip active" data-filter="all">All</button>
+                    <button class="filter-chip" data-filter="complete">🟢 Complete</button>
+                    <button class="filter-chip" data-filter="progress">🟡 Working</button>
+                    <button class="filter-chip" data-filter="pending">🔴 Pending</button>
+                    <button class="filter-chip" data-filter="paid">🟢 Paid</button>
+                    <button class="filter-chip" data-filter="unpaid">🔴 Unpaid</button>
+                </div>
+            </div>
+
+            <!-- Add Task Input Row -->
+            <form id="addTaskForm" class="add-task-form">
+                <input type="text" id="newTaskTitle" class="form-control" placeholder="Task Title *" required>
+                <input type="text" id="newTaskDesc" class="form-control" placeholder="Description">
+                
+                <!-- 3 Dot Status Selector -->
+                <div class="dot-selector-wrapper" id="statusDotSelector" title="Select Task Status: Green (Complete), Yellow (Working), Red (Pending)">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-right: 0.2rem;">Status:</span>
+                    <div class="dot-option green selected" data-val="complete" title="Green: Complete"></div>
+                    <div class="dot-option yellow" data-val="progress" title="Yellow: Working on it"></div>
+                    <div class="dot-option red" data-val="pending" title="Red: Not Complete"></div>
+                    <input type="hidden" id="newTaskStatus" value="complete">
+                </div>
+
+                <input type="text" id="newTaskRemarks" class="form-control" placeholder="Remarks">
+
+                <!-- 2 Dot Payment Selector -->
+                <div class="dot-selector-wrapper" id="paymentDotSelector" title="Select Payment Status: Green (Paid), Red (Unpaid)">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-right: 0.2rem;">Payment:</span>
+                    <div class="dot-option green selected" data-val="paid" title="Green: Paid"></div>
+                    <div class="dot-option red" data-val="unpaid" title="Red: Unpaid"></div>
+                    <input type="hidden" id="newTaskPayment" value="paid">
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-plus"></i> Add Row
+                </button>
+            </form>
+        </div>
+
+        <!-- Main Task Sheet Table -->
+        <div class="sheet-container">
+            <div class="sheet-table-wrapper">
+                <table class="sheet-table">
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Description</th>
+                            <th>Status (Select Dot)</th>
+                            <th>Remarks</th>
+                            <th>Payment (Select Dot)</th>
+                            <th style="text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="taskTableBody">
+                        <!-- Dynamic task rows rendered via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- GitHub Settings Modal -->
+    <div class="modal-overlay" id="githubModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2><i class="fa-brands fa-github"></i> GitHub Live Cloud Sync Settings</h2>
+                <button class="btn-icon" id="closeGithubModalBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="instruction-box">
+                    <strong><i class="fa-solid fa-lightbulb"></i> How to Sync Across All Browsers/Devices:</strong>
+                    <ol>
+                        <li>Open this link: <a href="https://github.com/settings/tokens" target="_blank" style="color: #4f46e5; font-weight: 600;">github.com/settings/tokens</a></li>
+                        <li>Click <strong>Generate new token (classic)</strong>.</li>
+                        <li>Check the <code>gist</code> checkbox and click <strong>Generate token</strong> at the bottom.</li>
+                        <li>Paste your token below and click <strong>"Auto Create & Connect Gist"</strong>!</li>
+                    </ol>
+                </div>
+
+                <div class="form-group">
+                    <label for="ghTokenInput">GitHub Personal Access Token (PAT):</label>
+                    <input type="password" id="ghTokenInput" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                </div>
+
+                <div class="form-group">
+                    <label for="ghGistIdInput">GitHub Gist ID (Auto-filled or manual):</label>
+                    <input type="text" id="ghGistIdInput" class="form-control" placeholder="e.g. 5a1b2c3d4e5f6g7h8i9j">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap;">
+                <button id="autoCreateGistBtn" class="btn btn-github">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Auto Create & Connect Gist
+                </button>
+                <button id="saveGithubSettingsBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-check"></i> Save & Connect
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="script.js"></script>
+</body>
+</html>
