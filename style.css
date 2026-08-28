@@ -3,20 +3,20 @@
     --bg-body: #f8fafc;
     --card-bg: #ffffff;
     --card-border: #e2e8f0;
-    --card-shadow: none;
-    --card-shadow-hover: none;
     
     --text-primary: #0f172a;
     --text-secondary: #475569;
     --text-muted: #94a3b8;
     
-    /* Neutral Inactive Dot Color */
-    --dot-inactive: #cbd5e1;
+    /* Darker Vibrant Selection Colors (Solid High-Contrast) */
+    --color-complete: #15803d;
+    --color-complete-bg: #16a34a;
     
-    /* Solid Active Colors */
-    --color-green: #16a34a;
-    --color-yellow: #ca8a04;
-    --color-red: #dc2626;
+    --color-progress: #a16207;
+    --color-progress-bg: #d97706;
+    
+    --color-pending: #b91c1c;
+    --color-pending-bg: #dc2626;
     
     --accent-indigo: #4f46e5;
     --accent-indigo-hover: #4338ca;
@@ -42,7 +42,7 @@ body {
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 1450px;
     margin: 0 auto;
 }
 
@@ -135,7 +135,7 @@ header {
     background-color: #4f46e5;
 }
 
-/* Action Buttons (Flat Solid Style) */
+/* Action Buttons */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -200,18 +200,18 @@ header {
     background: #fee2e2;
 }
 
-/* Stats Overview Dashboard (Flat Cards) */
+/* Stats Overview Dashboard */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.85rem;
     margin-bottom: 1.25rem;
 }
 
 .stat-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    padding: 1rem 1.15rem;
+    padding: 0.95rem 1.1rem;
     border-radius: var(--radius-md);
     display: flex;
     justify-content: space-between;
@@ -219,7 +219,7 @@ header {
 }
 
 .stat-info h3 {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-secondary);
@@ -228,7 +228,7 @@ header {
 }
 
 .stat-info .value {
-    font-size: 1.5rem;
+    font-size: 1.45rem;
     font-weight: 700;
     color: var(--text-primary);
 }
@@ -325,8 +325,8 @@ header {
 /* Add Task Form */
 .add-task-form {
     display: grid;
-    grid-template-columns: 2fr 3fr 1.5fr 2fr 1.5fr auto;
-    gap: 0.75rem;
+    grid-template-columns: 2fr 2.5fr 1.3fr 1.8fr 2fr 1.6fr auto;
+    gap: 0.65rem;
     align-items: center;
     margin-top: 1rem;
     padding-top: 1rem;
@@ -335,12 +335,12 @@ header {
 
 .form-control {
     width: 100%;
-    padding: 0.55rem 0.8rem;
+    padding: 0.55rem 0.75rem;
     background: #f8fafc;
     border: 1px solid var(--card-border);
     border-radius: var(--radius-md);
     color: var(--text-primary);
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     outline: none;
     transition: var(--transition);
 }
@@ -350,49 +350,150 @@ header {
     border-color: var(--accent-indigo);
 }
 
-/* 🟢 Plain Color Dot Selectors (Add Form) */
-.dot-selector-wrapper {
+/* 📌 Darker High-Contrast Selection Controls (Add Form) */
+.tick-selector-wrapper {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
     background: #f8fafc;
-    padding: 0.4rem 0.6rem;
+    padding: 0.35rem 0.5rem;
     border: 1px solid var(--card-border);
     border-radius: var(--radius-md);
 }
 
-.dot-option {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
+.tick-option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
     cursor: pointer;
+    background: #ffffff;
+    border: 1px solid var(--card-border);
+    color: var(--text-muted);
     transition: var(--transition);
-    background-color: var(--dot-inactive); /* Unselected dots are neutral gray */
-    border: 2px solid transparent;
 }
 
-.dot-option:hover {
-    transform: scale(1.15);
+.tick-option:hover {
+    background: #f1f5f9;
+    color: var(--text-primary);
 }
 
-/* ONLY Selected dot gets its specific vibrant color! */
-.dot-option.green.selected {
-    background-color: var(--color-green);
-    transform: scale(1.2);
+/* SOLID DARKER SELECTED STATES */
+.tick-option.complete.selected {
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #15803d;
 }
 
-.dot-option.yellow.selected {
-    background-color: var(--color-yellow);
-    transform: scale(1.2);
+.tick-option.progress.selected {
+    background: #d97706;
+    color: #ffffff;
+    border-color: #b45309;
 }
 
-.dot-option.red.selected {
-    background-color: var(--color-red);
-    transform: scale(1.2);
+.tick-option.pending.selected {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #b91c1c;
 }
 
-/* Table Container (Flat Solid) */
+.tick-option.paid.selected {
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #15803d;
+}
+
+.tick-option.unpaid.selected {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #b91c1c;
+}
+
+/* 📌 Table Rows Darker Tick Buttons */
+.table-tick-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.table-tick-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    background: #ffffff;
+    border: 1px solid var(--card-border);
+    color: var(--text-muted);
+    transition: var(--transition);
+}
+
+.table-tick-btn:hover {
+    border-color: #cbd5e1;
+    color: var(--text-primary);
+    background: #f8fafc;
+}
+
+/* SOLID DARKER ACTIVE BUTTONS */
+.table-tick-btn.complete.active {
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #15803d;
+}
+
+.table-tick-btn.progress.active {
+    background: #d97706;
+    color: #ffffff;
+    border-color: #b45309;
+}
+
+.table-tick-btn.pending.active {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #b91c1c;
+}
+
+/* Payment Tick Pills (Darker Solid Active States) */
+.payment-tick-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: #ffffff;
+    border: 1px solid var(--card-border);
+    color: var(--text-muted);
+    transition: var(--transition);
+}
+
+.payment-tick-btn:hover {
+    background: #f8fafc;
+    color: var(--text-primary);
+}
+
+.payment-tick-btn.paid.active {
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #15803d;
+}
+
+.payment-tick-btn.unpaid.active {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #b91c1c;
+}
+
+/* Table Container */
 .sheet-container {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
@@ -437,58 +538,23 @@ header {
 .task-title-cell {
     font-weight: 600;
     color: var(--text-primary);
-    min-width: 180px;
+    min-width: 160px;
 }
 
 .task-desc-cell {
     color: var(--text-secondary);
-    min-width: 240px;
+    min-width: 220px;
+}
+
+.task-duration-cell {
+    color: var(--text-primary);
+    font-weight: 500;
+    min-width: 130px;
 }
 
 .task-remarks-cell {
     color: var(--text-secondary);
-    min-width: 200px;
-}
-
-/* 🟢 Plain Color Interactive Dots (Table Rows) */
-.interactive-dots {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    background: #f1f5f9;
-    padding: 0.35rem 0.6rem;
-    border-radius: 20px;
-    border: 1px solid var(--card-border);
-    width: fit-content;
-}
-
-.interactive-dots .dot {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: var(--transition);
-    background-color: var(--dot-inactive); /* Unselected dots are neutral gray */
-}
-
-.interactive-dots .dot:hover {
-    transform: scale(1.2);
-}
-
-/* ONLY Active/Selected Dot Shows Plain Solid Color (No Glow, No Shadow) */
-.interactive-dots .dot-green.active {
-    background-color: var(--color-green);
-    transform: scale(1.2);
-}
-
-.interactive-dots .dot-yellow.active {
-    background-color: var(--color-yellow);
-    transform: scale(1.2);
-}
-
-.interactive-dots .dot-red.active {
-    background-color: var(--color-red);
-    transform: scale(1.2);
+    min-width: 180px;
 }
 
 /* Editable Cells */
@@ -524,7 +590,7 @@ header {
     margin-bottom: 0.4rem;
 }
 
-/* Modal Overlay & GitHub Settings (Flat) */
+/* Modal Overlay & GitHub Settings */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -607,7 +673,7 @@ header {
     margin-bottom: 0.35rem;
 }
 
-/* Toast Notifications (Flat) */
+/* Toast Notifications */
 .toast-container {
     position: fixed;
     bottom: 1.75rem;
@@ -637,9 +703,9 @@ header {
 }
 
 /* Responsive adjustments */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
     .add-task-form {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
     }
 }
 
