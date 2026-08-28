@@ -1,7 +1,7 @@
 /**
  * Edusense Task & Payment Status Sheet Manager
  * Author: Antigravity AI
- * Features: GitHub Gist Cloud Sync, LocalStorage Backup, Interactive Status Dots, Real-time Filters, Excel/CSV Export
+ * Features: Clean Checkmark Ticks (✓), GitHub Cloud Sync, LocalStorage Backup, Duration/Hours Column, Real-time Filters, Excel/CSV Export
  */
 
 const STORAGE_KEY = 'EDUSENSE_SHEET_DATA_V1';
@@ -9,12 +9,13 @@ const GH_TOKEN_KEY = 'EDUSENSE_GH_TOKEN';
 const GH_GIST_ID_KEY = 'EDUSENSE_GH_GIST_ID';
 const GIST_FILENAME = 'edusense_tasks.json';
 
-// Initial sample data if local storage & GitHub are empty
+// Initial sample data
 const defaultTasks = [
     {
         id: 'task-1',
         task: 'Website UI Redesign',
         description: 'Complete front-end mockups for Edusense portal',
+        duration: '6 hrs',
         status: 'complete',
         remarks: 'Delivered ahead of schedule',
         payment: 'paid',
@@ -24,6 +25,7 @@ const defaultTasks = [
         id: 'task-2',
         task: 'Database Migration',
         description: 'Migrate student records to AWS DynamoDB cluster',
+        duration: '2 days',
         status: 'progress',
         remarks: '50% records transferred',
         payment: 'unpaid',
@@ -33,6 +35,7 @@ const defaultTasks = [
         id: 'task-3',
         task: 'SmarterASP Server Setup',
         description: 'Configure IIS web server and SSL certificate',
+        duration: '4 hrs',
         status: 'pending',
         remarks: 'Waiting for DNS propagation',
         payment: 'unpaid',
@@ -84,7 +87,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupBackupHandlers();
     setupGitHubSyncModal();
 
-    // Check if GitHub Sync is configured
     if (ghGistId) {
         updateSyncBadgeStatus('syncing', 'Syncing with GitHub...');
         const success = await fetchTasksFromGitHub();
@@ -255,7 +257,7 @@ async function createGistAutomatically() {
         showToast('Failed to create Gist. Please verify token permissions (gist scope).', 'error');
     } finally {
         autoCreateGistBtn.disabled = false;
-        autoCreateGistBtn.innerHTML = '<i class="fa-solid fa-magic"></i> Auto Create & Connect Gist';
+        autoCreateGistBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Auto Create & Connect Gist';
     }
 }
 
@@ -317,27 +319,27 @@ function setupGitHubSyncModal() {
     });
 }
 
-// Setup Form Submission & Dot Selectors
+// Setup Form Submission & Tick Selectors
 function setupFormListeners() {
-    const statusDots = document.querySelectorAll('#statusDotSelector .dot-option');
-    const paymentDots = document.querySelectorAll('#paymentDotSelector .dot-option');
+    const statusTicks = document.querySelectorAll('#statusTickSelector .tick-option');
+    const paymentTicks = document.querySelectorAll('#paymentTickSelector .tick-option');
     
     const newTaskStatus = document.getElementById('newTaskStatus');
     const newTaskPayment = document.getElementById('newTaskPayment');
 
-    statusDots.forEach(dot => {
-        dot.addEventListener('click', () => {
-            statusDots.forEach(d => d.classList.remove('selected'));
-            dot.classList.add('selected');
-            newTaskStatus.value = dot.dataset.val;
+    statusTicks.forEach(tick => {
+        tick.addEventListener('click', () => {
+            statusTicks.forEach(t => t.classList.remove('selected'));
+            tick.classList.add('selected');
+            newTaskStatus.value = tick.dataset.val;
         });
     });
 
-    paymentDots.forEach(dot => {
-        dot.addEventListener('click', () => {
-            paymentDots.forEach(d => d.classList.remove('selected'));
-            dot.classList.add('selected');
-            newTaskPayment.value = dot.dataset.val;
+    paymentTicks.forEach(tick => {
+        tick.addEventListener('click', () => {
+            paymentTicks.forEach(t => t.classList.remove('selected'));
+            tick.classList.add('selected');
+            newTaskPayment.value = tick.dataset.val;
         });
     });
 
@@ -345,6 +347,7 @@ function setupFormListeners() {
         e.preventDefault();
         const taskVal = document.getElementById('newTaskTitle').value.trim();
         const descVal = document.getElementById('newTaskDesc').value.trim();
+        const durationVal = document.getElementById('newTaskDuration').value.trim();
         const remarksVal = document.getElementById('newTaskRemarks').value.trim();
         const statusVal = newTaskStatus.value;
         const paymentVal = newTaskPayment.value;
@@ -358,6 +361,7 @@ function setupFormListeners() {
             id: 'task-' + Date.now(),
             task: taskVal,
             description: descVal || '-',
+            duration: durationVal || '-',
             status: statusVal,
             remarks: remarksVal || '-',
             payment: paymentVal,
@@ -369,12 +373,12 @@ function setupFormListeners() {
         renderSheet();
         addTaskForm.reset();
         
-        statusDots.forEach(d => d.classList.remove('selected'));
-        statusDots[0].classList.add('selected');
+        statusTicks.forEach(t => t.classList.remove('selected'));
+        statusTicks[0].classList.add('selected');
         newTaskStatus.value = 'complete';
 
-        paymentDots.forEach(d => d.classList.remove('selected'));
-        paymentDots[0].classList.add('selected');
+        paymentTicks.forEach(t => t.classList.remove('selected'));
+        paymentTicks[0].classList.add('selected');
         newTaskPayment.value = 'paid';
 
         showToast('New Task Added & Synced!', 'success');
@@ -430,6 +434,7 @@ function renderSheet() {
         const matchesSearch = 
             task.task.toLowerCase().includes(searchQuery) ||
             task.description.toLowerCase().includes(searchQuery) ||
+            (task.duration && task.duration.toLowerCase().includes(searchQuery)) ||
             task.remarks.toLowerCase().includes(searchQuery);
 
         return matchesFilter && matchesSearch;
@@ -438,7 +443,7 @@ function renderSheet() {
     if (filteredTasks.length === 0) {
         taskTableBody.innerHTML = `
             <tr>
-                <td colspan="6">
+                <td colspan="7">
                     <div class="empty-state">
                         <i class="fa-solid fa-folder-open"></i>
                         <h3>No Tasks Found</h3>
@@ -458,25 +463,40 @@ function renderSheet() {
             <td class="task-desc-cell">
                 <span class="editable-cell" contenteditable="true" data-field="description">${escapeHtml(task.description)}</span>
             </td>
+            <td class="task-duration-cell">
+                <span class="editable-cell" contenteditable="true" data-field="duration" placeholder="e.g. 5 hrs">${escapeHtml(task.duration || '-')}</span>
+            </td>
             <td>
-                <div class="interactive-dots" title="Click dot to change status: Green (Complete), Yellow (Working), Red (Pending)">
-                    <span class="dot dot-green ${task.status === 'complete' ? 'active' : ''}" 
-                          onclick="updateTaskStatus('${task.id}', 'complete')" title="Green: Complete"></span>
-                    <span class="dot dot-yellow ${task.status === 'progress' ? 'active' : ''}" 
-                          onclick="updateTaskStatus('${task.id}', 'progress')" title="Yellow: Working on it"></span>
-                    <span class="dot dot-red ${task.status === 'pending' ? 'active' : ''}" 
-                          onclick="updateTaskStatus('${task.id}', 'pending')" title="Red: Not Complete"></span>
+                <!-- 📌 Clean Checkmark Tick Group for Status -->
+                <div class="table-tick-group">
+                    <button class="table-tick-btn complete ${task.status === 'complete' ? 'active' : ''}" 
+                            onclick="updateTaskStatus('${task.id}', 'complete')" title="Complete (✓)">
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+                    <button class="table-tick-btn progress ${task.status === 'progress' ? 'active' : ''}" 
+                            onclick="updateTaskStatus('${task.id}', 'progress')" title="Working on it (⏳)">
+                        <i class="fa-solid fa-clock"></i>
+                    </button>
+                    <button class="table-tick-btn pending ${task.status === 'pending' ? 'active' : ''}" 
+                            onclick="updateTaskStatus('${task.id}', 'pending')" title="Not Complete (✗)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
             </td>
             <td class="task-remarks-cell">
                 <span class="editable-cell" contenteditable="true" data-field="remarks">${escapeHtml(task.remarks)}</span>
             </td>
             <td>
-                <div class="interactive-dots" title="Click dot to change payment status: Green (Paid), Red (Unpaid)">
-                    <span class="dot dot-green ${task.payment === 'paid' ? 'active' : ''}" 
-                          onclick="updateTaskPayment('${task.id}', 'paid')" title="Green: Paid"></span>
-                    <span class="dot dot-red ${task.payment === 'unpaid' ? 'active' : ''}" 
-                          onclick="updateTaskPayment('${task.id}', 'unpaid')" title="Red: Unpaid"></span>
+                <!-- 📌 Clean Checkmark Tick Group for Payment -->
+                <div class="table-tick-group">
+                    <button class="payment-tick-btn paid ${task.payment === 'paid' ? 'active' : ''}" 
+                            onclick="updateTaskPayment('${task.id}', 'paid')" title="Paid">
+                        <i class="fa-solid fa-check"></i> Paid
+                    </button>
+                    <button class="payment-tick-btn unpaid ${task.payment === 'unpaid' ? 'active' : ''}" 
+                            onclick="updateTaskPayment('${task.id}', 'unpaid')" title="Unpaid">
+                        <i class="fa-solid fa-xmark"></i> Unpaid
+                    </button>
                 </div>
             </td>
             <td style="text-align: right;">
@@ -505,7 +525,7 @@ function renderSheet() {
     });
 }
 
-// Update Status Via Dot Click
+// Update Status Via Tick Click
 window.updateTaskStatus = async function(id, newStatus) {
     const task = tasks.find(t => t.id === id);
     if (task) {
@@ -517,7 +537,7 @@ window.updateTaskStatus = async function(id, newStatus) {
     }
 };
 
-// Update Payment Status Via Dot Click
+// Update Payment Status Via Tick Click
 window.updateTaskPayment = async function(id, newPayment) {
     const task = tasks.find(t => t.id === id);
     if (task) {
@@ -553,9 +573,9 @@ window.deleteTask = async function(id) {
 // Helpers & Formatters
 function getStatusLabel(status) {
     switch (status) {
-        case 'complete': return 'Complete (Green)';
-        case 'progress': return 'Working on it (Yellow)';
-        case 'pending': return 'Not Complete (Red)';
+        case 'complete': return 'Complete (✓)';
+        case 'progress': return 'Working on it (⏳)';
+        case 'pending': return 'Not Complete (✗)';
         default: return status;
     }
 }
@@ -593,9 +613,9 @@ function showToast(message, type = 'info') {
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(100%)';
-        toast.style.transition = 'all 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+        toast.style.transition = 'all 0.2s ease';
+        setTimeout(() => toast.remove(), 200);
+    }, 2800);
 }
 
 // Backup (Import / Export JSON & CSV)
@@ -612,11 +632,12 @@ function setupBackupHandlers() {
     });
 
     exportCsvBtn.addEventListener('click', () => {
-        let csvContent = "data:text/csv;charset=utf-8,Task,Description,Status,Remarks,Payment Status,Last Updated\n";
+        let csvContent = "data:text/csv;charset=utf-8,Task,Description,Duration/Hours,Status,Remarks,Payment Status,Last Updated\n";
         tasks.forEach(t => {
             const row = [
                 `"${t.task.replace(/"/g, '""')}"`,
                 `"${t.description.replace(/"/g, '""')}"`,
+                `"${(t.duration || '').replace(/"/g, '""')}"`,
                 `"${t.status}"`,
                 `"${t.remarks.replace(/"/g, '""')}"`,
                 `"${t.payment}"`,
