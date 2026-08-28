@@ -8,7 +8,7 @@
     --text-secondary: #475569;
     --text-muted: #94a3b8;
     
-    /* Darker Vibrant Selection Colors (Solid High-Contrast) */
+    /* Clean Tick Colors */
     --color-complete: #15803d;
     --color-complete-bg: #16a34a;
     
@@ -203,7 +203,7 @@ header {
 /* Stats Overview Dashboard */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 0.85rem;
     margin-bottom: 1.25rem;
 }
@@ -247,8 +247,7 @@ header {
 .stat-indicator.complete { background: #dcfce7; color: #16a34a; }
 .stat-indicator.progress { background: #fef9c3; color: #ca8a04; }
 .stat-indicator.pending { background: #fee2e2; color: #dc2626; }
-.stat-indicator.paid { background: #d1fae5; color: #059669; }
-.stat-indicator.unpaid { background: #ffe4e6; color: #e11d48; }
+.stat-indicator.docs { background: #f0fdf4; color: #0284c7; }
 
 /* Control Panel (Search & Add) */
 .controls-panel {
@@ -322,10 +321,10 @@ header {
     border-color: var(--accent-indigo);
 }
 
-/* Add Task Form */
+/* Add Task Form with Document Upload */
 .add-task-form {
     display: grid;
-    grid-template-columns: 2fr 2.5fr 1.3fr 1.8fr 2fr 1.6fr auto;
+    grid-template-columns: 2fr 2.5fr 1.3fr 1.8fr 2fr 2fr auto;
     gap: 0.65rem;
     align-items: center;
     margin-top: 1rem;
@@ -350,7 +349,89 @@ header {
     border-color: var(--accent-indigo);
 }
 
-/* 📌 Darker High-Contrast Selection Controls (Add Form) */
+/* Document File Input Styling */
+.file-upload-input {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: 0.45rem 0.5rem;
+    background: #f8fafc;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+
+/* 📌 Document Wrapper & Download Badge */
+.doc-badge-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.doc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.7rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition);
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.doc-badge:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+    color: #1e40af;
+}
+
+.btn-delete-doc {
+    padding: 0.3rem 0.45rem;
+    border-radius: 4px;
+    color: #94a3b8;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.btn-delete-doc:hover {
+    color: #dc2626;
+    background: #fee2e2;
+    border-color: #fca5a5;
+}
+
+/* Attach Document Button inside table */
+.attach-file-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: #f8fafc;
+    border: 1px dashed var(--card-border);
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.attach-file-btn:hover {
+    color: var(--accent-indigo);
+    border-color: var(--accent-indigo);
+    background: #eef2ff;
+}
+
+/* Selection Controls */
 .tick-selector-wrapper {
     display: flex;
     align-items: center;
@@ -382,7 +463,6 @@ header {
     color: var(--text-primary);
 }
 
-/* SOLID DARKER SELECTED STATES */
 .tick-option.complete.selected {
     background: #16a34a;
     color: #ffffff;
@@ -401,19 +481,7 @@ header {
     border-color: #b91c1c;
 }
 
-.tick-option.paid.selected {
-    background: #16a34a;
-    color: #ffffff;
-    border-color: #15803d;
-}
-
-.tick-option.unpaid.selected {
-    background: #dc2626;
-    color: #ffffff;
-    border-color: #b91c1c;
-}
-
-/* 📌 Table Rows Darker Tick Buttons */
+/* Table Rows Tick Buttons */
 .table-tick-group {
     display: inline-flex;
     align-items: center;
@@ -441,7 +509,6 @@ header {
     background: #f8fafc;
 }
 
-/* SOLID DARKER ACTIVE BUTTONS */
 .table-tick-btn.complete.active {
     background: #16a34a;
     color: #ffffff;
@@ -455,39 +522,6 @@ header {
 }
 
 .table-tick-btn.pending.active {
-    background: #dc2626;
-    color: #ffffff;
-    border-color: #b91c1c;
-}
-
-/* Payment Tick Pills (Darker Solid Active States) */
-.payment-tick-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 16px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    background: #ffffff;
-    border: 1px solid var(--card-border);
-    color: var(--text-muted);
-    transition: var(--transition);
-}
-
-.payment-tick-btn:hover {
-    background: #f8fafc;
-    color: var(--text-primary);
-}
-
-.payment-tick-btn.paid.active {
-    background: #16a34a;
-    color: #ffffff;
-    border-color: #15803d;
-}
-
-.payment-tick-btn.unpaid.active {
     background: #dc2626;
     color: #ffffff;
     border-color: #b91c1c;
@@ -543,13 +577,17 @@ header {
 
 .task-desc-cell {
     color: var(--text-secondary);
-    min-width: 220px;
+    min-width: 200px;
 }
 
 .task-duration-cell {
     color: var(--text-primary);
     font-weight: 500;
-    min-width: 130px;
+    min-width: 120px;
+}
+
+.task-doc-cell {
+    min-width: 190px;
 }
 
 .task-remarks-cell {
